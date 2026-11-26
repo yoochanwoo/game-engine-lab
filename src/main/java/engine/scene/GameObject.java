@@ -1,35 +1,34 @@
 package engine.scene;
 
-import engine.render.Mesh;
+import engine.render.Model;
 import org.joml.Vector3f;
 
 /**
- * 씬에 놓인 물체 하나입니다. 메시, 변환, 색을 묶습니다.
+ * 씬에 놓인 물체 하나입니다. 모델, 변환, 색 배율을 묶습니다.
  *
- * <p>메시는 형태만 가지고, 어디에 있는지는 변환이, 어떤 색인지는 이 오브젝트가 가집니다.
- * 같은 큐브 메시로 크기와 색이 다른 상자를 여러 개 만들 수 있습니다. 3단계에서
- * 모델 파일을 읽으면 {@link #mesh}가 가리키는 대상만 바꾸면 되고, 변환과 그리는
- * 경로는 그대로입니다.
+ * <p>모델은 형태와 재질(기본 색, 텍스처)을 가지고, 어디에 있는지는 변환이 가집니다.
+ * 같은 나무 모델을 여러 오브젝트가 가리킬 수 있습니다. 다른 파일로 바꾸려면
+ * {@link #setModel}에 새 경로로 불러온 모델을 넣으면 됩니다.
  *
- * <p>색은 0에서 1 사이의 RGB입니다. 조명은 렌더러가 나중에 곱합니다.
+ * <p>{@link #color}는 재질 색에 곱하는 배율입니다. (1, 1, 1)이면 파일에 있는 색 그대로입니다.
+ * 코드로 만든 흰 상자는 이 배율로 상자마다 다른 색을 냅니다.
  */
 public final class GameObject {
 
-    private Mesh mesh;
+    private Model model;
     private final Transform transform = new Transform();
     private final Vector3f color = new Vector3f(1f, 1f, 1f);
 
-    public GameObject(Mesh mesh) {
-        this.mesh = mesh;
+    public GameObject(Model model) {
+        this.model = model;
     }
 
-    public Mesh mesh() {
-        return mesh;
+    public Model model() {
+        return model;
     }
 
-    /** 나중에 파일에서 읽은 모델로 큐브를 교체할 때 사용합니다. */
-    public void setMesh(Mesh mesh) {
-        this.mesh = mesh;
+    public void setModel(Model model) {
+        this.model = model;
     }
 
     public Transform transform() {

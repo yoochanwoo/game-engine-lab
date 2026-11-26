@@ -2,7 +2,7 @@
 
 직접 만들어 가는 작은 3D 게임 엔진입니다. 최종 목표는 PC용 1인칭 로우폴리 탐험 게임입니다. NPC와 대화하며 돌아다니는, ENA: Dream BBQ 같은 분위기를 지향합니다. Windows가 기본이고, macOS와 Linux에서도 같은 방법으로 실행할 수 있게 맞춰 두었습니다.
 
-지금은 **2단계**입니다. 1단계의 씬을 눈높이(1.7m)의 1인칭 카메라로 걸어 다닙니다. 높이는 바뀌지 않고, 마우스로 고개를 돌립니다.
+지금은 **3단계**입니다. 1인칭으로 걸어 다니며, 파일에서 읽은 로우폴리 모델(나무, 바위, 벤치, 사람, 상자)이 있는 씬을 봅니다.
 
 ## 준비물
 
@@ -40,7 +40,7 @@ macOS / Linux:
 
 ## 조작
 
-시작하는 위치는 1단계 카메라와 같습니다. 상자들이 모인 쪽을 살짝 내려다보고 있습니다.
+시작하는 위치는 1단계 카메라와 같습니다. 모델이 모인 쪽을 살짝 내려다보고 있습니다.
 
 | 입력 | 동작 |
 | --- | --- |
@@ -52,6 +52,35 @@ macOS / Linux:
 | 왼쪽 클릭 (커서가 풀린 상태) | 커서를 다시 잡고 플레이를 이어 갑니다. |
 
 다른 창으로 전환하면 커서도 풀립니다. 게임 창을 다시 클릭하면 잡힙니다.
+
+## 모델 넣기
+
+좌표는 **1단위 = 1미터**, **+Y가 위**입니다. 모델의 가장 낮은 점이 바닥(y=0)에 닿도록 씬이 높이를 맞춥니다. 파일 속 크기가 미터가 아니면, 오브젝트의 scale로 키우거나 줄입니다. 콘솔에 `로컬 y 0.00 ~ 1.71`처럼 파일 기준 높이가 찍힙니다.
+
+지원 형식:
+
+- **glTF 2.0 바이너리 (`.glb`)** — 기본. 메시, 재질 색, 텍스처가 한 파일(또는 옆 폴더의 이미지)에 있습니다.
+- **Wavefront (`.obj`)** — `.mtl`과 `map_Kd` 이미지가 같은 폴더에 있으면 같이 읽습니다. `models/crate.obj`가 예시입니다.
+
+데모에 들어 있는 파일은 `src/main/resources/models/`에 있고, 출처는 그 폴더의 `CREDITS.md`에 있습니다. Kenney 팩은 CC0입니다.
+
+자기 모델로 바꾸려면 `DemoGame`에서 경로 문자열만 바꾸면 됩니다.
+
+```java
+Model hero = models.load("models/hero.glb");
+```
+
+작업 폴더에 파일을 두고 `models.load("my/hero.glb")`처럼 적어도 됩니다. 같은 경로를 두 번 부르면 파일을 다시 읽지 않고 이미 만든 모델을 공유합니다.
+
+Blender에서 `.glb`로 보낼 때:
+
+1. 단위를 미터로 두고, 서 있는 모델의 발이 원점 근처, 위가 +Y가 되게 합니다. 필요하면 Object → Apply → All Transforms.
+2. File → Export → glTF 2.0 (.glb).
+3. Format은 **glTF Binary (.glb)**.
+4. Include에서 Mesh, Materials를 켜고, 텍스처를 쓰면 Images도 켭니다. 이미지가 glb 밖에 있으면 모델 옆 상대 경로 그대로 둡니다.
+5. Transform은 **+Y Up**.
+
+읽어 들인 뒤에는 파일의 부드러운 노멀 대신, 삼각형마다 면 노멀을 다시 만들어 모서리가 각지게 그립니다.
 
 화면이 없는 환경에서 그린 결과를 파일로 남기려면:
 
@@ -83,21 +112,21 @@ src/main/java
   game/            데모 게임. 씬을 만들고 엔진을 시작합니다.
   engine/core/     창과 게임 루프.
   engine/input/    키보드, 마우스, 커서 잡기.
-  engine/render/   셰이더, 메시, 카메라, 실제로 그리는 코드.
+  engine/render/   셰이더, 메시, 모델, 카메라, 실제로 그리는 코드.
   engine/scene/    물체, 위치, 1인칭 조작.
-src/main/resources/shaders
-  basic.vert       정점 셰이더
-  basic.frag       픽셀 셰이더
+src/main/resources
+  models/          데모 모델(.glb, .obj)과 CREDITS.md
+  shaders/         정점 셰이더, 픽셀 셰이더
 ```
 
-물체(`GameObject`)는 메시를 가리키기만 합니다. 같은 큐브 메시를 여러 상자가 공유하고, 위치와 색만 다릅니다. 3단계에서 `.glb`나 `.obj`를 읽으면 그 결과도 `Mesh`가 되고, 상자가 가리키는 메시만 바꾸면 됩니다. 그리는 코드는 그대로입니다.
+물체(`GameObject`)는 `Model`을 가리킵니다. 모델은 메시 여러 개와 재질(색, 텍스처)을 가집니다. 같은 나무 모델을 두 오브젝트가 공유하고, 위치와 크기는 각자 변환으로 둡니다. 다른 파일로 바꾸려면 `models.load`에 넘기는 경로만 바꾸면 됩니다.
 
 ## 클래스
 
 | 클래스 | 하는 일 |
 | --- | --- |
 | `game.Main` | 프로그램 시작. 창과 데모 게임을 만들어 엔진에 넘깁니다. |
-| `game.DemoGame` | 바닥과 상자 다섯 개를 배치하고, 1인칭 조작을 매 프레임 갱신합니다. |
+| `game.DemoGame` | 바닥과 읽어 들인 모델을 배치하고, 1인칭 조작을 매 프레임 갱신합니다. |
 | `engine.core.Window` | GLFW로 1280×720 창과 OpenGL 3.3 코어 컨텍스트를 엽니다. 크기가 바뀌면 뷰포트를 맞춥니다. |
 | `engine.core.Engine` | 게임 루프. 지난 프레임 이후의 시간(delta)을 재고, update 다음 render를 반복합니다. |
 | `engine.core.Game` | 게임이 구현하는 네 메서드: `init`, `update`, `render`, `destroy`. |
@@ -105,13 +134,16 @@ src/main/resources/shaders
 | `engine.input.Input` | 콜백으로 모은 키·마우스 상태. 프레임마다 읽고, 프레임 끝에서 1회성 값을 지웁니다. |
 | `engine.scene.FirstPersonController` | WASD, Shift, 마우스 시선을 카메라에 적용합니다. |
 | `engine.render.Shader` | `resources/shaders`의 GLSL을 읽어 컴파일하고, 행렬과 색 유니폼을 넣습니다. |
-| `engine.render.Mesh` | 정점 버퍼(VBO), 인덱스 버퍼(EBO), 정점 배열(VAO)을 GPU에 올립니다. |
-| `engine.render.Primitives` | 코드로 만드는 큐브와 바닥. 면마다 노멀이 달라 각져 보입니다. |
+| `engine.render.Mesh` | 정점 버퍼(VBO), 인덱스 버퍼(EBO), 정점 배열(VAO). 삼각형 한 덩어리. |
+| `engine.render.Model` | 파일 하나. 메시 여러 개와 재질. 가장 낮은 점(`minY`)도 기억합니다. |
+| `engine.render.Material` | 기본 색, 있을 때 텍스처, 양면 여부. |
+| `engine.render.Models` | 경로로 모델을 캐시합니다. 같은 경로는 한 번만 읽습니다. |
+| `engine.render.Primitives` | 코드로 만드는 바닥. 면마다 노멀이 달라 각져 보입니다. |
 | `engine.render.Camera` | 눈 위치와 yaw/pitch로 view 행렬을, 창 비율로 projection 행렬을 만듭니다. |
 | `engine.render.Renderer` | 화면을 지우고, 방향광을 넣은 뒤 메시를 그립니다. |
 | `engine.render.Screenshot` | `--screenshot`일 때만 쓰는 프레임 저장. |
 | `engine.scene.Transform` | 위치, 회전(도), 크기를 model 행렬로 바꿉니다. |
-| `engine.scene.GameObject` | 메시 하나, 변환 하나, 색 하나. |
+| `engine.scene.GameObject` | 모델 하나, 변환 하나, 색 배율. |
 
 ## 한 프레임이 지나가는 길
 
@@ -134,6 +166,8 @@ src/main/resources/shaders
 **delta time.** 속력은 초당 미터(걷기 4, Shift 7.5)입니다. 프레임이 0.016초면 약 6.4cm, 0.033초면 약 13cm를 갑니다. W와 A를 같이 눌러도 대각선이 더 빠르지 않게 방향을 길이 1로 맞춘 뒤에 곱합니다.
 
 **콜백과 폴링.** 키를 누르는 순간은 콜백입니다. 그 콜백은 "W가 눌려 있다"만 기록하고 카메라를 움직이지 않습니다. 이동은 프레임에 한 번, 기록된 상태를 읽고 일어납니다. 방금 눌렸는지는 그 프레임에만 true이고, 프레임이 끝나면 지워집니다. 그래서 나중에 상호작용 키를 `Key`에 추가해도 같은 방식으로 한 번만 반응하게 할 수 있습니다.
+
+**메시, 모델, 재질.** 메시는 삼각형 한 덩어리입니다. 모델은 그 메시를 여러 개 묶은 것이고, 각 메시에 재질(기본 색, 텍스처)이 붙습니다. 나무는 몸통과 잎이 재질이 다릅니다. glTF는 씬 아래 노드 트리가 있고, 노드마다 이동·회전·크기와 메시 번호가 있습니다. 로더는 그 트리를 따라가 정점에 변환을 구워 넣습니다. 면 노멀은 파일 값을 쓰지 않고 삼각형 두 변의 외적으로 다시 만듭니다. 정점을 면끼리 공유하지 않아서, 조명을 받아도 모서리가 둥글게 뭉개지지 않습니다.
 
 OpenGL 관례대로 +Y가 위입니다. 시작할 때 카메라는 +Z 쪽에 서서 원점 쪽을 봅니다.
 

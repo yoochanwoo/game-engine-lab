@@ -19,6 +19,7 @@ import static org.lwjgl.opengl.GL33C.glGetShaderi;
 import static org.lwjgl.opengl.GL33C.glGetUniformLocation;
 import static org.lwjgl.opengl.GL33C.glLinkProgram;
 import static org.lwjgl.opengl.GL33C.glShaderSource;
+import static org.lwjgl.opengl.GL33C.glUniform1i;
 import static org.lwjgl.opengl.GL33C.glUniform3f;
 import static org.lwjgl.opengl.GL33C.glUniformMatrix4fv;
 import static org.lwjgl.opengl.GL33C.glUseProgram;
@@ -93,6 +94,10 @@ public final class Shader {
 
     public void setVec3(String name, Vector3f value) {
         glUniform3f(location(name), value.x, value.y, value.z);
+    }
+
+    public void setInt(String name, int value) {
+        glUniform1i(location(name), value);
     }
 
     public void destroy() {

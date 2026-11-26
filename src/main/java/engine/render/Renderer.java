@@ -7,9 +7,12 @@ import static org.lwjgl.opengl.GL33C.GL_CULL_FACE;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL33C.GL_DEPTH_TEST;
 import static org.lwjgl.opengl.GL33C.GL_MULTISAMPLE;
+import static org.lwjgl.opengl.GL33C.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL33C.glActiveTexture;
 import static org.lwjgl.opengl.GL33C.glClear;
 import static org.lwjgl.opengl.GL33C.glClearColor;
 import static org.lwjgl.opengl.GL33C.glCullFace;
+import static org.lwjgl.opengl.GL33C.glDisable;
 import static org.lwjgl.opengl.GL33C.glEnable;
 import static org.lwjgl.opengl.GL33C.glFrontFace;
 
@@ -19,9 +22,9 @@ import org.joml.Vector3f;
 /**
  * 화면을 지우고, 셰이더에 카메라와 빛을 넣은 뒤 메시를 그립니다.
  *
- * <p>메시의 형태와 오브젝트의 위치는 여기서 만들지 않습니다. 이미 만들어진 행렬과
- * 색을 유니폼으로 넘길 뿐입니다. 그래서 큐브든 나중에 읽어 들인 모델이든 그리는
- * 코드는 같습니다.
+ * <p>모델의 형태와 오브젝트의 위치는 여기서 만들지 않습니다. 이미 만들어진 행렬과
+ * 재질을 유니폼으로 넘길 뿐입니다. 코드로 만든 상자든 파일에서 읽은 모델이든
+ * 그리는 경로는 같습니다.
  */
 public final class Renderer {
 
@@ -32,7 +35,10 @@ public final class Renderer {
     private float clearGreen = 0.78f;
     private float clearBlue = 0.92f;
 
+    private final Vector3f tintedColor = new Vector3f();
+
     private Shader shader;
+    private Texture whiteTexture;
 
     public void init() {
         glEnable(GL_DEPTH_TEST);
@@ -41,6 +47,7 @@ public final class Renderer {
         glFrontFace(GL_CCW);
         glEnable(GL_MULTISAMPLE);
         shader = Shader.load("/shaders/basic.vert", "/shaders/basic.frag");
+        whiteTexture = Texture.white();
     }
 
     public void setClearColor(float red, float green, float blue) {
@@ -78,15 +85,38 @@ public final class Renderer {
         shader.setVec3("uLightDirection", lightDirection);
         shader.setVec3("uLightColor", lightColor);
         shader.setVec3("uAmbientColor", ambientColor);
+        shader.setInt("uBaseColorTexture", 0);
+        glActiveTexture(GL_TEXTURE0);
     }
 
-    public void draw(Mesh mesh, Matrix4f model, Vector3f color) {
-        shader.setMat4("uModel", model);
-        shader.setVec3("uColor", color);
-        mesh.draw();
+    /**
+     * 모델의 부분마다 재질 색과 텍스처를 넣고 그립니다.
+     * {@code tint}는 재질 색에 곱합니다. (1, 1, 1)이면 파일 색 그대로입니다.
+     */
+    public void draw(Model model, Matrix4f objectTransform, Vector3f tint) {
+        shader.setMat4("uModel", objectTransform);
+        for (Model.Part part : model.parts()) {
+            Material material = part.material();
+            Vector3f base = material.baseColor();
+            tintedColor.set(base.x * tint.x, base.y * tint.y, base.z * tint.z);
+            shader.setVec3("uColor", tintedColor);
+            Texture texture = material.texture() == null ? whiteTexture : material.texture();
+            texture.bind();
+            if (material.doubleSided()) {
+                glDisable(GL_CULL_FACE);
+            } else {
+                glEnable(GL_CULL_FACE);
+            }
+            part.mesh().draw();
+        }
+        glEnable(GL_CULL_FACE);
     }
 
     public void destroy() {
+        if (whiteTexture != null) {
+            whiteTexture.destroy();
+            whiteTexture = null;
+        }
         if (shader != null) {
             shader.destroy();
             shader = null;

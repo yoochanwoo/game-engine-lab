@@ -1,0 +1,4 @@
+# 상자 재질. map_Kd가 같은 폴더의 PNG를 가리킵니다.
+newmtl crate
+Kd 1.000 1.000 1.000
+map_Kd crate.png
