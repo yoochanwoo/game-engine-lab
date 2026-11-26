@@ -24,10 +24,10 @@ import static org.lwjgl.opengl.GL33C.glVertexAttribPointer;
  * 버퍼 객체를 만듭니다.
  *
  * <ul>
- *   <li><b>VBO</b> (vertex buffer): 정점의 위치와 노멀 숫자 그 자체.
+ *   <li><b>VBO</b> (vertex buffer): 정점의 위치, 노멀, 텍스처 좌표.
  *   <li><b>EBO</b> (element buffer): 삼각형을 만들 정점 번호. 같은 정점을 여러 삼각형이 재사용합니다.
- *   <li><b>VAO</b> (vertex array): "0번은 위치 3개, 1번은 노멀 3개"라는 해석 방법.
- *       셰이더의 {@code layout(location = 0)}, {@code layout(location = 1)}과 짝입니다.
+ *   <li><b>VAO</b> (vertex array): "0번은 위치, 1번은 노멀, 2번은 UV"라는 해석 방법.
+ *       셰이더의 {@code layout(location = 0/1/2)}와 짝입니다.
  * </ul>
  *
  * <p>한 메시를 여러 {@link engine.scene.GameObject}가 공유할 수 있습니다.
@@ -37,8 +37,8 @@ import static org.lwjgl.opengl.GL33C.glVertexAttribPointer;
  */
 public final class Mesh {
 
-    /** 정점 하나: 위치 xyz + 노멀 xyz. */
-    public static final int FLOATS_PER_VERTEX = 6;
+    /** 정점 하나: 위치 xyz + 노멀 xyz + 텍스처 좌표 uv. */
+    public static final int FLOATS_PER_VERTEX = 8;
 
     private int vao;
     private int vbo;
@@ -55,7 +55,7 @@ public final class Mesh {
     /**
      * 정점과 인덱스를 GPU에 올립니다. OpenGL 컨텍스트가 만들어진 뒤, 그 스레드에서 호출해야 합니다.
      *
-     * @param vertices 위치 3개와 노멀 3개가 정점마다 반복되는 배열
+     * @param vertices 위치 3개, 노멀 3개, UV 2개가 정점마다 반복되는 배열
      * @param indices 삼각형 3개씩의 정점 번호
      */
     public static Mesh upload(float[] vertices, int[] indices) {
@@ -84,6 +84,8 @@ public final class Mesh {
         glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0L);
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, false, stride, 3L * Float.BYTES);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, 6L * Float.BYTES);
 
         glBindVertexArray(0);
         glBindBuffer(GL_ARRAY_BUFFER, 0);

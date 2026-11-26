@@ -92,6 +92,9 @@ public final class Primitives {
                 vertices[offset + 3] = normalX;
                 vertices[offset + 4] = normalY;
                 vertices[offset + 5] = normalZ;
+                // 코드로 만든 도형은 텍스처가 없습니다. UV는 0으로 둡니다.
+                vertices[offset + 6] = 0f;
+                vertices[offset + 7] = 0f;
                 vertexCount++;
             }
             indices[indexCount++] = baseVertex;
