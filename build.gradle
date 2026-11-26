@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+// 실행 진입점. VS Code나 터미널에서 `run` 작업을 누르면 이 클래스가 시작됩니다.
+application {
+    mainClass = 'game.Main'
+}
+
+repositories {
+    mavenCentral()
+}
+
+// LWJGL 3: 창(GLFW)과 OpenGL. JOML: 벡터와 행렬.
+// 버전을 올릴 때는 이 두 값만 맞추면 됩니다.
+def lwjglVersion = '3.4.3'
+def jomlVersion = '1.10.9'
+
+// 네이티브 라이브러리(실제 .dll / .dylib / .so)는 OS마다 다릅니다.
+// 세 운영체제의 64비트 데스크톱용을 모두 넣어 두면, 실행하는 쪽에서 LWJGL이
+// 맞는 파일을 골라 씁니다. Windows가 기본 대상이고 macOS, Linux도 같이 둡니다.
+def lwjglNatives = [
+        'natives-windows',
+        'natives-windows-arm64',
+        'natives-macos',
+        'natives-macos-arm64',
+        'natives-linux',
+        'natives-linux-arm64',
+]
+
+dependencies {
+    implementation platform("org.lwjgl:lwjgl-bom:${lwjglVersion}")
+
+    implementation 'org.lwjgl:lwjgl'
+    implementation 'org.lwjgl:lwjgl-glfw'
+    implementation 'org.lwjgl:lwjgl-opengl'
+    implementation "org.joml:joml:${jomlVersion}"
+
+    lwjglNatives.each { nativeName ->
+        runtimeOnly "org.lwjgl:lwjgl::${nativeName}"
+        runtimeOnly "org.lwjgl:lwjgl-glfw::${nativeName}"
+        runtimeOnly "org.lwjgl:lwjgl-opengl::${nativeName}"
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    // JDK 17 이상이면 무엇이 설치되어 있든, 만들어지는 바이트코드는 17 기준입니다.
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('run').configure {
+    // macOS에서 GLFW는 Java의 첫 스레드가 Cocoa 메인 스레드여야 창을 엽니다.
+    // Windows와 Linux에서는 이 옵션이 필요 없고, 넣으면 오히려 문제가 될 수 있습니다.
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+        jvmArgs '-XstartOnFirstThread'
+    }
+}

@@ -19,6 +19,26 @@
 *.tar.gz
 *.rar
 
+# Gradle Wrapper의 jar는 저장소에 포함합니다. 위에서 *.jar로 막히지 않게 예외를 둡니다.
+!gradle/wrapper/gradle-wrapper.jar
+
+# Gradle
+.gradle/
+build/
+
+# IDE
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+bin/
+out/
+
+# VS Code 개인 설정은 제외하고, 추천 확장 목록만 공유합니다.
+.vscode/*
+!.vscode/extensions.json
+
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*

@@ -1,0 +1,2 @@
+// 프로젝트 이름. 빌드 결과 폴더와 IDE에 이 이름으로 표시됩니다.
+rootProject.name = 'game-engine-lab'
