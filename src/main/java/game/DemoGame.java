@@ -2,35 +2,63 @@ package game;
 
 import engine.core.Game;
 import engine.core.Window;
+import engine.input.Input;
+import engine.input.Key;
 import engine.render.Camera;
 import engine.render.Mesh;
 import engine.render.Primitives;
 import engine.render.Renderer;
+import engine.scene.FirstPersonController;
 import engine.scene.GameObject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.joml.Matrix4f;
 import org.joml.Vector3f;
 
 /**
- * 1단계 데모 씬입니다. 풀빛 바닥 위에 색이 다른 상자 몇 개를 올려 두고,
- * 눈높이의 고정 카메라로 바라봅니다.
+ * 데모 씬입니다. 풀빛 바닥 위에 색이 다른 상자 몇 개를 올려 두고,
+ * 눈높이의 1인칭 카메라로 걸어 다닙니다.
  *
  * <p>좌표의 1단위는 1미터로 둡니다. 카메라 높이가 1.7인 이유입니다.
  * 큐브 메시는 중심이 원점이라, 바닥에 붙이려면 y를 높이의 절반으로 둡니다.
+ *
+ * <p>처음 서 있는 자리와 고개는 1단계에서 고정 카메라가 보던 방향과 같습니다.
  */
 public final class DemoGame implements Game {
+
+    /** 1단계 {@code lookAt(4.6, 1.7, 6.0 → 0, 0.55, 0.2)}과 같은 방향입니다. */
+    private static final float START_X = 4.6f;
+    private static final float START_Z = 6.0f;
+    private static final float START_YAW_DEGREES = -38.4f;
+    private static final float START_PITCH_DEGREES = -8.8f;
+
+    private final boolean rehearseForScreenshot;
 
     private Window window;
     private Renderer renderer;
     private Camera camera;
+    private FirstPersonController player;
     private Mesh cubeMesh;
     private Mesh groundMesh;
     private final List<GameObject> objects = new ArrayList<>();
     private final Matrix4f model = new Matrix4f();
 
+    public DemoGame() {
+        this(false);
+    }
+
+    /**
+     * @param rehearseForScreenshot true면 시작하자마자 앞과 왼쪽으로 조금 걷고
+     *     고개를 돌린 뒤의 모습을 첫 화면으로 둡니다. 입력이 없는 환경에서
+     *     1인칭 이동을 확인할 때 씁니다.
+     */
+    public DemoGame(boolean rehearseForScreenshot) {
+        this.rehearseForScreenshot = rehearseForScreenshot;
+    }
+
     @Override
-    public void init(Window window) {
+    public void init(Window window, Input input) {
         this.window = window;
 
         cubeMesh = Primitives.cube();
@@ -47,8 +75,11 @@ public final class DemoGame implements Game {
 
         camera = new Camera();
         camera.setFieldOfViewDegrees(55f);
-        // 눈높이는 1.7m. 상자들이 모인 쪽을 살짝 내려다봅니다.
-        camera.lookAt(4.6f, 1.7f, 6.0f, 0.0f, 0.55f, 0.2f);
+        player = new FirstPersonController(camera, input, window);
+        player.place(START_X, START_Z, START_YAW_DEGREES, START_PITCH_DEGREES);
+        if (rehearseForScreenshot) {
+            rehearsePlayer(input);
+        }
 
         addGround();
         // 가운데 산호색 상자
@@ -65,8 +96,7 @@ public final class DemoGame implements Game {
 
     @Override
     public void update(float deltaSeconds) {
-        // 1단계에서는 아무것도 움직이지 않습니다.
-        // 2단계에서 이 deltaSeconds로 1인칭 카메라를 이동합니다.
+        player.update(deltaSeconds);
     }
 
     @Override
@@ -90,6 +120,31 @@ public final class DemoGame implements Game {
         if (groundMesh != null) {
             groundMesh.destroy();
         }
+    }
+
+    /**
+     * 키보드와 마우스가 없는 환경에서, 실제 컨트롤러에 입력을 넣어 걸음을 재현합니다.
+     * 80프레임 × 1/60초 동안 W+A를 누른 채 마우스를 오른쪽·아래로 조금 움직입니다.
+     */
+    private void rehearsePlayer(Input input) {
+        float fixedDelta = 1f / 60f;
+        input.debugSetDown(Key.W, true);
+        input.debugSetDown(Key.A, true);
+        for (int frame = 0; frame < 80; frame++) {
+            input.debugAddMouseDelta(2f, 1f);
+            player.update(fixedDelta);
+            input.endFrame();
+        }
+        input.debugSetDown(Key.W, false);
+        input.debugSetDown(Key.A, false);
+        System.out.println(String.format(
+                Locale.ROOT,
+                "리허설 카메라: (%.2f, %.2f, %.2f) yaw %.1f pitch %.1f",
+                player.x(),
+                player.y(),
+                player.z(),
+                player.yawDegrees(),
+                player.pitchDegrees()));
     }
 
     private void addGround() {

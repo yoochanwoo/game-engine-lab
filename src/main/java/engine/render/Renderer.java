@@ -63,7 +63,10 @@ public final class Renderer {
         ambientColor.set(ambient);
     }
 
-    /** 색과 깊이 버퍼를 지우고, 이 프레임 동안 유지되는 카메라와 빛 유니폼을 넣습니다. */
+    /**
+     * 색과 깊이 버퍼를 지우고, 이 프레임 동안 유지되는 카메라와 빛 유니폼을 넣습니다.
+     * {@code aspect}는 창의 프레임버퍼 비율이라, 크기를 바꾸면 다음 프레임의 투영이 따라갑니다.
+     */
     public void begin(Camera camera, float aspect) {
         glClearColor(clearRed, clearGreen, clearBlue, 1f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
