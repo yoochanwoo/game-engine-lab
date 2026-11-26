@@ -1,5 +1,7 @@
 package engine.core;
 
+import engine.input.Input;
+
 /**
  * 엔진이 매 프레임 부르는 게임 쪽 진입점입니다.
  *
@@ -8,8 +10,8 @@ package engine.core;
  */
 public interface Game {
 
-    /** OpenGL 컨텍스트가 준비된 뒤 한 번 호출됩니다. 메시와 셰이더를 여기서 만듭니다. */
-    void init(Window window);
+    /** OpenGL 컨텍스트와 입력이 준비된 뒤 한 번 호출됩니다. 메시와 셰이더를 여기서 만듭니다. */
+    void init(Window window, Input input);
 
     /**
      * 시뮬레이션을 한 번 진행합니다.
