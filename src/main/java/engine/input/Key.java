@@ -14,5 +14,6 @@ public enum Key {
     /** 왼쪽 Shift와 오른쪽 Shift 둘 다입니다. */
     SHIFT,
     SPACE,
+    E,
     ESCAPE
 }

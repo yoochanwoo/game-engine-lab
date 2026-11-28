@@ -1,0 +1,78 @@
+{
+  "mira": {
+    "name": "미라",
+    "first": "hello",
+    "again": "again",
+    "met": "met_mira",
+    "nodes": {
+      "hello": {
+        "lines": [
+          "안녕. 이 마당은 내가 돌보고 있어.",
+          "벤치에 앉으면 바람이 좋아."
+        ],
+        "choices": [
+          {"text": "이름이 뭐야?", "next": "name"},
+          {"text": "잘 있어.", "next": "bye"}
+        ]
+      },
+      "name": {
+        "lines": ["미라야. 다음에 보면 기억해 둘게."],
+        "next": "bye"
+      },
+      "bye": {
+        "lines": ["또 와."]
+      },
+      "again": {
+        "lines": ["또 왔구나.", "계단 위는 바람이 조금 세."]
+      }
+    }
+  },
+  "doyun": {
+    "name": "도윤",
+    "first": "hello",
+    "again": "again",
+    "met": "met_doyun",
+    "nodes": {
+      "hello": {
+        "lines": ["계단을 오르면 마당이 한눈에 보여.", "한 칸은 낮아서 걸어 올라갈 수 있어."],
+        "choices": [
+          {"text": "올라가 봐도 돼?", "next": "yes"},
+          {"text": "그냥 볼게.", "next": "look"}
+        ]
+      },
+      "yes": {
+        "lines": ["응. 모서리만 조심해."]
+      },
+      "look": {
+        "lines": ["천천히 봐도 돼."]
+      },
+      "again": {
+        "lines": ["계단은 그대로야. 급하지 않게."]
+      }
+    }
+  },
+  "haneul": {
+    "name": "하늘",
+    "first": "hello",
+    "again": "again",
+    "met": "met_haneul",
+    "nodes": {
+      "hello": {
+        "lines": ["나무 그늘이 이 시간엔 딱 좋아.", "여기서 오래 서 있게 돼."],
+        "choices": [
+          {"text": "너는 누구야?", "next": "who"},
+          {"text": "그늘이 좋네.", "next": "shade"}
+        ]
+      },
+      "who": {
+        "lines": ["하늘이야. 이 나무 옆이 내 자리야."]
+      },
+      "shade": {
+        "lines": ["그치. 앉을 자리는 미라가 쓸고 있어."]
+      },
+      "again": {
+        "lines": ["그늘은 아직 여기 있어."]
+      }
+    }
+  }
+}
