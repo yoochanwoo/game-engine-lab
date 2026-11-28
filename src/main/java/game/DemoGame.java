@@ -4,8 +4,8 @@ import engine.core.Game;
 import engine.core.Window;
 import engine.input.Input;
 import engine.input.Key;
+import engine.physics.CollisionWorld;
 import engine.render.Camera;
-import engine.render.Mesh;
 import engine.render.Model;
 import engine.render.Models;
 import engine.render.Primitives;
@@ -29,11 +29,10 @@ import org.joml.Vector3f;
  */
 public final class DemoGame implements Game {
 
-    /** 1단계 {@code lookAt(4.6, 1.7, 6.0 → 0, 0.55, 0.2)}과 같은 방향입니다. */
-    private static final float START_X = 4.6f;
-    private static final float START_Z = 6.0f;
-    private static final float START_YAW_DEGREES = -38.4f;
-    private static final float START_PITCH_DEGREES = -8.8f;
+    private static final float START_X = 0f;
+    private static final float START_Z = 6.5f;
+    private static final float START_YAW_DEGREES = 0f;
+    private static final float START_PITCH_DEGREES = -12f;
 
     private final boolean rehearseForScreenshot;
 
@@ -74,17 +73,14 @@ public final class DemoGame implements Game {
         camera = new Camera();
         camera.setFieldOfViewDegrees(55f);
         player = new FirstPersonController(camera, input, window);
-        player.place(START_X, START_Z, START_YAW_DEGREES, START_PITCH_DEGREES);
-        if (rehearseForScreenshot) {
-            rehearsePlayer(input);
-        }
 
         models = new Models();
-        Mesh groundMesh = Primitives.ground();
         Model ground = models.store(
                 "primitive/ground",
-                Model.colored(groundMesh, 0.42f, 0.58f, 0.36f, 0f, 0f));
-        // 같은 경로를 두 번 불러도 파일은 한 번만 읽고, 두 오브젝트가 그 모델을 공유합니다.
+                Model.colored(Primitives.ground(), 0.46f, 0.62f, 0.38f, -1f, 0f, -1f, 1f, 0f, 1f));
+        Model block = models.store(
+                "primitive/block",
+                Model.colored(Primitives.cube(), 1f, 1f, 1f, -0.5f, -0.5f, -0.5f, 0.5f, 0.5f, 0.5f));
         Model tree = models.load("models/tree.glb");
         Model rock = models.load("models/rock.glb");
         Model bench = models.load("models/bench.glb");
@@ -92,13 +88,30 @@ public final class DemoGame implements Game {
         Model crate = models.load("models/crate.obj");
 
         addGround(ground);
-        place(tree, -2.1f, -0.4f, 15f, 1.7f);
-        place(tree, -0.4f, -1.5f, -20f, 1.2f);
-        place(rock, -2.55f, 1.15f, 25f, 1.6f);
-        place(bench, -1.15f, 1.7f, 35f, 2.4f);
-        // 미니 캐릭터는 나중에 NPC로 쓸 자리입니다. 파일 속 키는 0.67m라 키워서 세웁니다.
-        place(character, 0.15f, 0.55f, 210f, 2.2f);
-        place(crate, -0.55f, 2.35f, -20f, 0.55f);
+        wall(block, 0f, -14f, 28f, 0.8f);
+        wall(block, 0f, 14f, 28f, 0.8f);
+        wall(block, -14f, 0f, 0.8f, 28f);
+        wall(block, 14f, 0f, 0.8f, 28f);
+        step(block, 3.4f, -1.0f, 2.6f, 1.5f, 0f);
+        step(block, 3.4f, -2.4f, 2.4f, 1.5f, 0.28f);
+        step(block, 3.4f, -4.3f, 3.4f, 2.6f, 0.56f);
+
+        prop(tree, -3.2f, -2.2f, 10f, 1.8f);
+        prop(tree, 0.4f, -6.2f, -15f, 1.5f);
+        prop(tree, 6.2f, 1.4f, 30f, 1.6f);
+        prop(tree, -6.5f, 2.5f, 0f, 1.4f);
+        propOn(tree, 3.4f, -4.3f, 20f, 1.2f, 0.84f);
+        prop(rock, -1.6f, 1.2f, 20f, 1.5f);
+        prop(rock, 1.4f, -0.4f, -10f, 1.2f);
+        prop(bench, -0.4f, -1.6f, 25f, 2.3f);
+        prop(crate, 1.6f, 1.8f, -15f, 0.6f);
+        prop(character, -2.4f, -5.2f, 160f, 2.2f);
+
+        player.setCollision(CollisionWorld.fromObjects(objects));
+        player.place(START_X, START_Z, START_YAW_DEGREES, START_PITCH_DEGREES);
+        if (rehearseForScreenshot) {
+            rehearsePlayer(input);
+        }
     }
 
     @Override
@@ -132,14 +145,12 @@ public final class DemoGame implements Game {
     private void rehearsePlayer(Input input) {
         float fixedDelta = 1f / 60f;
         input.debugSetDown(Key.W, true);
-        input.debugSetDown(Key.A, true);
-        for (int frame = 0; frame < 80; frame++) {
-            input.debugAddMouseDelta(2f, 1f);
+        for (int frame = 0; frame < 50; frame++) {
+            input.debugAddMouseDelta(0.4f, 0.3f);
             player.update(fixedDelta);
             input.endFrame();
         }
         input.debugSetDown(Key.W, false);
-        input.debugSetDown(Key.A, false);
         System.out.println(String.format(
                 Locale.ROOT,
                 "리허설 카메라: (%.2f, %.2f, %.2f) yaw %.1f pitch %.1f",
@@ -152,17 +163,35 @@ public final class DemoGame implements Game {
 
     private void addGround(Model ground) {
         GameObject object = new GameObject(ground);
-        // ground 메시는 2x2입니다. 16x16미터 바닥이 되도록 가로와 세로만 8배로 키웁니다.
-        object.transform().scale().set(8f, 1f, 8f);
+        object.transform().scale().set(14f, 1f, 14f);
         objects.add(object);
     }
 
-    /** 모델의 밑면이 바닥(y=0)에 닿게 놓고, 세 축을 같은 배율로 키웁니다. */
-    private void place(Model model, float x, float z, float yawDegrees, float scale) {
+    private void prop(Model model, float x, float z, float yawDegrees, float scale) {
+        propOn(model, x, z, yawDegrees, scale, 0f);
+    }
+
+    private void propOn(Model model, float x, float z, float yawDegrees, float scale, float floor) {
         GameObject object = new GameObject(model);
-        object.transform().position().set(x, -model.minY() * scale, z);
+        object.transform().position().set(x, floor - model.minY() * scale, z);
         object.transform().rotation().set(0f, yawDegrees, 0f);
         object.transform().scale().set(scale, scale, scale);
+        objects.add(object);
+    }
+
+    private void wall(Model block, float x, float z, float sx, float sz) {
+        box(block, x, z, sx, 1.35f, sz, 0f, 0.34f, 0.36f, 0.30f);
+    }
+
+    private void step(Model block, float x, float z, float sx, float sz, float floor) {
+        box(block, x, z, sx, 0.28f, sz, floor, 0.62f, 0.52f, 0.38f);
+    }
+
+    private void box(Model block, float x, float z, float sx, float sy, float sz, float floor, float r, float g, float b) {
+        GameObject object = new GameObject(block);
+        object.transform().scale().set(sx, sy, sz);
+        object.transform().position().set(x, floor - block.minY() * sy, z);
+        object.color().set(r, g, b);
         objects.add(object);
     }
 }
