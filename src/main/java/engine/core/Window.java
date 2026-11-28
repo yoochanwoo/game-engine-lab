@@ -178,6 +178,14 @@ public final class Window {
         glfwSetWindowShouldClose(handle, true);
     }
 
+    public int windowWidth() {
+        return windowWidth;
+    }
+
+    public int windowHeight() {
+        return windowHeight;
+    }
+
     public int framebufferWidth() {
         return framebufferWidth;
     }

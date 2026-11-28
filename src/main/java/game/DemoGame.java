@@ -12,6 +12,9 @@ import engine.render.Primitives;
 import engine.render.Renderer;
 import engine.scene.FirstPersonController;
 import engine.scene.GameObject;
+import engine.ui.Font;
+import engine.ui.Ui;
+import game.Dialogue.Npc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,11 +40,16 @@ public final class DemoGame implements Game {
     private final boolean rehearseForScreenshot;
 
     private Window window;
+    private Input input;
     private Renderer renderer;
     private Camera camera;
     private FirstPersonController player;
     private Models models;
+    private Font font;
+    private Ui ui;
+    private Dialogue dialogue;
     private final List<GameObject> objects = new ArrayList<>();
+    private final List<Npc> npcs = new ArrayList<>();
     private final Matrix4f model = new Matrix4f();
 
     public DemoGame() {
@@ -60,6 +68,7 @@ public final class DemoGame implements Game {
     @Override
     public void init(Window window, Input input) {
         this.window = window;
+        this.input = input;
 
         renderer = new Renderer();
         renderer.init();
@@ -105,17 +114,50 @@ public final class DemoGame implements Game {
         prop(rock, 1.4f, -0.4f, -10f, 1.2f);
         prop(bench, -0.4f, -1.6f, 25f, 2.3f);
         prop(crate, 1.6f, 1.8f, -15f, 0.6f);
-        prop(character, -2.4f, -5.2f, 160f, 2.2f);
+
+        font = new Font("/fonts/NanumGothic-Regular.ttf", 28);
+        ui = new Ui();
+        dialogue = new Dialogue(ui, font);
+        spawnNpcs(character);
 
         player.setCollision(CollisionWorld.fromObjects(objects));
         player.place(START_X, START_Z, START_YAW_DEGREES, START_PITCH_DEGREES);
         if (rehearseForScreenshot) {
             rehearsePlayer(input);
+            dialogue.debugOpen(npcs.get(0));
         }
+    }
+
+    private void spawnNpcs(Model character) {
+        npcs.clear();
+        npcs.add(placeNpc("mira", character, -2.2f, -1.4f));
+        npcs.add(placeNpc("doyun", character, 2.6f, -2.2f));
+        npcs.add(placeNpc("haneul", character, 5.4f, 2.2f));
+    }
+
+    private Npc placeNpc(String id, Model character, float x, float z) {
+        GameObject object = new GameObject(character);
+        object.transform().position().set(x, -character.minY() * 2.2f, z);
+        object.transform().scale().set(2.2f, 2.2f, 2.2f);
+        objects.add(object);
+        return new Npc(id, dialogue.script(id), object);
     }
 
     @Override
     public void update(float deltaSeconds) {
+        for (Npc npc : npcs) {
+            npc.face(player.x(), player.z());
+        }
+        player.setCollision(CollisionWorld.fromObjects(objects));
+        dialogue.update(
+                deltaSeconds,
+                input,
+                player,
+                npcs,
+                window.framebufferWidth(),
+                window.framebufferHeight(),
+                scaleMouse(input.mouseX(), window.windowWidth(), window.framebufferWidth()),
+                scaleMouse(input.mouseY(), window.windowHeight(), window.framebufferHeight()));
         player.update(deltaSeconds);
     }
 
@@ -126,16 +168,34 @@ public final class DemoGame implements Game {
             object.transform().writeModel(model);
             renderer.draw(object.model(), model, object.color());
         }
+        float mouseX = scaleMouse(input.mouseX(), window.windowWidth(), window.framebufferWidth());
+        float mouseY = scaleMouse(input.mouseY(), window.windowHeight(), window.framebufferHeight());
+        ui.begin(window.framebufferWidth(), window.framebufferHeight());
+        dialogue.render(input, player, npcs, window.framebufferWidth(), window.framebufferHeight(), mouseX, mouseY);
+        ui.end();
     }
 
     @Override
     public void destroy() {
+        if (font != null) {
+            font.destroy();
+        }
+        if (ui != null) {
+            ui.destroy();
+        }
         if (models != null) {
             models.destroy();
         }
         if (renderer != null) {
             renderer.destroy();
         }
+    }
+
+    private float scaleMouse(float windowCoord, int windowSize, int framebufferSize) {
+        if (windowSize <= 0) {
+            return windowCoord;
+        }
+        return windowCoord * framebufferSize / windowSize;
     }
 
     /**

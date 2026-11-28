@@ -2,6 +2,7 @@ package engine.input;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_A;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_D;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_E;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LAST;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
@@ -45,6 +46,8 @@ public final class Input {
     private boolean mouseLeftPressed;
     private float mouseDeltaX;
     private float mouseDeltaY;
+    private float mouseX;
+    private float mouseY;
     private boolean cursorCaptured;
 
     private double lastCursorX;
@@ -111,6 +114,26 @@ public final class Input {
     /** 지난 {@link #endFrame()} 이후 커서가 움직인 픽셀. 아래쪽이 양수입니다. */
     public float mouseDeltaY() {
         return mouseDeltaY;
+    }
+
+    public float mouseX() {
+        return mouseX;
+    }
+
+    public float mouseY() {
+        return mouseY;
+    }
+
+    public void consumePress(Key key) {
+        int glfwKey = key == Key.SHIFT ? GLFW_KEY_LEFT_SHIFT : code(key);
+        pressed[glfwKey] = false;
+        if (key == Key.SHIFT) {
+            pressed[GLFW_KEY_RIGHT_SHIFT] = false;
+        }
+    }
+
+    public void consumeMouseClick() {
+        mouseLeftPressed = false;
     }
 
     public boolean isCursorCaptured() {
@@ -231,6 +254,8 @@ public final class Input {
         float dy = (float) (y - lastCursorY);
         lastCursorX = x;
         lastCursorY = y;
+        mouseX = (float) x;
+        mouseY = (float) y;
         if (cursorCaptured) {
             mouseDeltaX += dx;
             mouseDeltaY += dy;
@@ -251,6 +276,8 @@ public final class Input {
                 return GLFW_KEY_LEFT_SHIFT;
             case SPACE:
                 return GLFW_KEY_SPACE;
+            case E:
+                return GLFW_KEY_E;
             case ESCAPE:
                 return GLFW_KEY_ESCAPE;
             default:

@@ -41,6 +41,7 @@ public final class FirstPersonController {
     private float feetY;
     private float velocityY;
     private boolean controlsEnabled = true;
+    private boolean captureSuspended;
 
     public FirstPersonController(Camera camera, Input input, Window window) {
         this.camera = camera;
@@ -56,6 +57,11 @@ public final class FirstPersonController {
     /** 대화 중에는 이동만 멈춥니다. 시점과 ESC는 그대로입니다. */
     public void setControlsEnabled(boolean enabled) {
         this.controlsEnabled = enabled;
+    }
+
+    /** 선택지가 있을 때 클릭으로 고르도록 커서 재포획을 멈춥니다. */
+    public void setCaptureSuspended(boolean suspended) {
+        this.captureSuspended = suspended;
     }
 
     public void place(float x, float z, float yawDegrees, float pitchDegrees) {
@@ -75,10 +81,12 @@ public final class FirstPersonController {
         }
 
         if (!input.isCursorCaptured()) {
-            if (input.wasMouseLeftPressed()) {
+            if (!captureSuspended && input.wasMouseLeftPressed()) {
                 input.captureCursor();
             }
-            return;
+            if (!input.isCursorCaptured()) {
+                return;
+            }
         }
 
         // 화면에서 오른쪽은 yaw 증가, 위쪽은 pitch 증가입니다.
