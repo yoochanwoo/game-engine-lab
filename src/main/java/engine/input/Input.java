@@ -7,6 +7,7 @@ import static org.lwjgl.glfw.GLFW.GLFW_KEY_LAST;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_LEFT_SHIFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_RIGHT_SHIFT;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_S;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_W;
 import static org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT;
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
@@ -248,6 +249,8 @@ public final class Input {
                 return GLFW_KEY_D;
             case SHIFT:
                 return GLFW_KEY_LEFT_SHIFT;
+            case SPACE:
+                return GLFW_KEY_SPACE;
             case ESCAPE:
                 return GLFW_KEY_ESCAPE;
             default:

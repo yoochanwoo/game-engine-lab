@@ -18,33 +18,67 @@ import java.util.Map;
 public final class Model {
 
     private final List<Part> parts;
+    private final float minX;
     private final float minY;
+    private final float minZ;
+    private final float maxX;
     private final float maxY;
+    private final float maxZ;
     private final String source;
 
-    Model(List<Part> parts, float minY, float maxY, String source) {
+    Model(List<Part> parts, float minX, float minY, float minZ, float maxX, float maxY, float maxZ, String source) {
         this.parts = List.copyOf(parts);
+        this.minX = minX;
         this.minY = minY;
+        this.minZ = minZ;
+        this.maxX = maxX;
         this.maxY = maxY;
+        this.maxZ = maxZ;
         this.source = source;
     }
 
-    /** 색만 있는 메시 하나입니다. 바닥과 상자처럼 코드로 만든 도형을 모델로 감쌀 때 씁니다. */
-    public static Model colored(Mesh mesh, float red, float green, float blue, float minY, float maxY) {
+    /** 색만 있는 메시 하나. 로컬 AABB는 충돌에 씁니다. */
+    public static Model colored(
+            Mesh mesh,
+            float red,
+            float green,
+            float blue,
+            float minX,
+            float minY,
+            float minZ,
+            float maxX,
+            float maxY,
+            float maxZ) {
         Material material = new Material(new org.joml.Vector3f(red, green, blue), null, false);
-        return new Model(List.of(new Part(mesh, material)), minY, maxY, "primitive");
+        return new Model(List.of(new Part(mesh, material)), minX, minY, minZ, maxX, maxY, maxZ, "primitive");
     }
 
     public List<Part> parts() {
         return parts;
     }
 
+    public float minX() {
+        return minX;
+    }
+
     public float minY() {
         return minY;
     }
 
+    public float minZ() {
+        return minZ;
+    }
+
+    public float maxX() {
+        return maxX;
+    }
+
     public float maxY() {
         return maxY;
+    }
+
+    public float maxZ() {
+        return maxZ;
     }
 
     public String source() {

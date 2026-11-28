@@ -3,6 +3,7 @@ package engine.scene;
 import engine.core.Window;
 import engine.input.Input;
 import engine.input.Key;
+import engine.physics.CollisionWorld;
 import engine.render.Camera;
 
 /**
@@ -27,24 +28,40 @@ public final class FirstPersonController {
 
     private static final float WALK_METERS_PER_SECOND = 4.0f;
     private static final float SPRINT_METERS_PER_SECOND = 7.5f;
-    /** 마우스 1픽셀이 고개를 몇 도 돌리는지. 크면 민감합니다. */
     private static final float MOUSE_DEGREES_PER_PIXEL = 0.12f;
+    private static final float RADIUS = 0.32f;
+    private static final float STEP_HEIGHT = 0.45f;
+    private static final float GRAVITY = 16f;
+    private static final float JUMP_SPEED = 5.4f;
 
     private final Camera camera;
     private final Input input;
     private final Window window;
+    private CollisionWorld world;
+    private float feetY;
+    private float velocityY;
+    private boolean controlsEnabled = true;
 
     public FirstPersonController(Camera camera, Input input, Window window) {
         this.camera = camera;
         this.input = input;
         this.window = window;
-        System.out.println("WASD로 이동하고 Shift를 누르면 빨라집니다. 마우스로 둘러봅니다.");
-        System.out.println("ESC로 커서를 풀고, 그 상태에서 ESC를 한 번 더 누르면 종료합니다. 클릭하면 다시 잡습니다.");
+        System.out.println("WASD 이동, Shift 달리기, Space 점프. ESC로 커서를 풀고, 한 번 더 누르면 종료.");
     }
 
-    /** 수평 위치와 고개 각도로 플레이어를 놓습니다. y는 눈높이로 고정됩니다. */
+    public void setCollision(CollisionWorld world) {
+        this.world = world;
+    }
+
+    /** 대화 중에는 이동만 멈춥니다. 시점과 ESC는 그대로입니다. */
+    public void setControlsEnabled(boolean enabled) {
+        this.controlsEnabled = enabled;
+    }
+
     public void place(float x, float z, float yawDegrees, float pitchDegrees) {
-        camera.setPose(x, EYE_HEIGHT, z, yawDegrees, pitchDegrees);
+        feetY = groundAt(x, z, 4f);
+        velocityY = 0f;
+        camera.setPose(x, feetY + EYE_HEIGHT, z, yawDegrees, pitchDegrees);
     }
 
     public void update(float deltaSeconds) {
@@ -68,9 +85,12 @@ public final class FirstPersonController {
         // 마우스 y는 아래로 갈수록 커지므로 pitch에서는 부호를 뒤집습니다.
         camera.addYaw(input.mouseDeltaX() * MOUSE_DEGREES_PER_PIXEL);
         camera.addPitch(-input.mouseDeltaY() * MOUSE_DEGREES_PER_PIXEL);
+        if (!controlsEnabled) {
+            camera.setHeight(feetY + EYE_HEIGHT);
+            return;
+        }
 
         float yawRadians = (float) Math.toRadians(camera.yawDegrees());
-        // yaw 0은 -Z를 봅니다. 마우스를 오른쪽으로 움직이면 +X 쪽으로 돕니다.
         float forwardX = (float) Math.sin(yawRadians);
         float forwardZ = (float) -Math.cos(yawRadians);
         float rightX = (float) Math.cos(yawRadians);
@@ -96,12 +116,47 @@ public final class FirstPersonController {
         }
 
         float lengthSquared = moveX * moveX + moveZ * moveZ;
+        float dx = 0f;
+        float dz = 0f;
         if (lengthSquared > 0f) {
             float speed = input.isDown(Key.SHIFT) ? SPRINT_METERS_PER_SECOND : WALK_METERS_PER_SECOND;
             float scale = speed * deltaSeconds / (float) Math.sqrt(lengthSquared);
-            camera.moveHorizontal(moveX * scale, moveZ * scale);
+            dx = moveX * scale;
+            dz = moveZ * scale;
         }
-        camera.setHeight(EYE_HEIGHT);
+        float x = camera.x();
+        float z = camera.z();
+        if (!blocked(x + dx, z)) {
+            x += dx;
+        }
+        if (!blocked(x, z + dz)) {
+            z += dz;
+        }
+
+        boolean grounded = Math.abs(feetY - groundAt(x, z, feetY)) < 0.05f && velocityY <= 0f;
+        if (grounded && input.wasPressed(Key.SPACE)) {
+            velocityY = JUMP_SPEED;
+        }
+        velocityY -= GRAVITY * deltaSeconds;
+        feetY += velocityY * deltaSeconds;
+        float ground = groundAt(x, z, feetY);
+        if (velocityY <= 0f && feetY <= ground) {
+            feetY = ground;
+            velocityY = 0f;
+        }
+        camera.setPose(x, feetY + EYE_HEIGHT, z, camera.yawDegrees(), camera.pitchDegrees());
+    }
+
+    private boolean blocked(float x, float z) {
+        return world != null && world.blocked(x, z, feetY, RADIUS, STEP_HEIGHT);
+    }
+
+    private float groundAt(float x, float z, float feet) {
+        if (world == null) {
+            return 0f;
+        }
+        float ground = world.groundY(x, z, RADIUS, feet, STEP_HEIGHT);
+        return ground == Float.NEGATIVE_INFINITY ? feet - 2f : ground;
     }
 
     public float x() {

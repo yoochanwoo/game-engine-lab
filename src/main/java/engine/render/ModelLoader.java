@@ -82,7 +82,8 @@ final class ModelLoader {
                     parts.size(),
                     bounds.minY,
                     bounds.maxY));
-            return new Model(parts, bounds.minY, bounds.maxY, path);
+            return new Model(
+                    parts, bounds.minX, bounds.minY, bounds.minZ, bounds.maxX, bounds.maxY, bounds.maxZ, path);
         } finally {
             scene.close();
         }
@@ -209,7 +210,7 @@ final class ModelLoader {
             px[i] = point.x;
             py[i] = point.y;
             pz[i] = point.z;
-            bounds.include(point.y);
+            bounds.include(point.x, point.y, point.z);
             if (texcoords != null) {
                 AIVector3D uv = texcoords.get(i);
                 u[i] = uv.x();
@@ -349,12 +350,20 @@ final class ModelLoader {
     }
 
     private static final class Bounds {
+        private float minX = Float.POSITIVE_INFINITY;
         private float minY = Float.POSITIVE_INFINITY;
+        private float minZ = Float.POSITIVE_INFINITY;
+        private float maxX = Float.NEGATIVE_INFINITY;
         private float maxY = Float.NEGATIVE_INFINITY;
+        private float maxZ = Float.NEGATIVE_INFINITY;
 
-        void include(float y) {
+        void include(float x, float y, float z) {
+            minX = Math.min(minX, x);
             minY = Math.min(minY, y);
+            minZ = Math.min(minZ, z);
+            maxX = Math.max(maxX, x);
             maxY = Math.max(maxY, y);
+            maxZ = Math.max(maxZ, z);
         }
     }
 }
